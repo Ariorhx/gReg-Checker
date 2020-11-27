@@ -1,0 +1,44 @@
+var YandexKassaLib = {
+    WidgetModal: $("#YandexKassaWidgetModalID"),
+    OrderID: null
+};
+
+
+
+// Загрузить данные Яндекс кассы
+YandexKassaLib.WidgetModal.on('show.bs.modal', function (e) {
+    CallURI("CreateYandexKassaPayment.php", {OrderID: YandexKassaLib.OrderID}, function (Result) {
+
+        $("#YandexWidgetPaymentForm").empty();
+
+        //Инициализация виджета. Все параметры обязательные.
+        let checkout = new window.YandexCheckout({
+            confirmation_token: Result.YandexKassaObject.confirmation.confirmation_token, //Токен, который перед проведением оплаты нужно получить от Яндекс.Кассы
+            return_url: 'https://greg-3d.ru/OrderPayed.php', //Ссылка на страницу завершения оплаты
+            embedded_3ds: true, // Способ прохождения аутентификации 3-D Secure — во всплывающем окне
+
+            error_callback(error) {
+                //Обработка ошибок инициализации
+                console.log(error);
+            }
+        });
+
+        //Отображение платежной формы в контейнере
+        checkout.render('YandexWidgetPaymentForm');
+
+
+    }, null, YandexKassaLib.WidgetModal.find(".modal-content"));
+});
+// Загрузить данные Яндекс кассы
+
+
+
+
+// Начать оплату
+YandexKassaLib.StartPayment = function (OrderID) {
+    YandexKassaLib.OrderID = OrderID;
+    YandexKassaLib.WidgetModal.modal();
+};
+// Начать оплату
+
+

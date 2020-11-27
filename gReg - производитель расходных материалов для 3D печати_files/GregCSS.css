@@ -1,0 +1,59 @@
+.MinTD {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.ClickableImage {
+    cursor: pointer;    
+}
+
+.ClickableImage:hover {
+    opacity: 0.9;
+}
+
+.ClickableTableRows tr { 
+    cursor: pointer;
+
+}
+
+.table-hover tr {
+    cursor: pointer;
+}
+
+.search__text {
+    color:#464a4c;
+}
+
+.search__text::placeholder {
+    color: #aaa;
+    opacity: 1;
+}
+
+.Hoverable {
+    cursor:pointer;
+}
+
+.Hoverable:hover {
+    background-color: #f2f2f2;
+} 
+
+
+
+html, body, input, button, td, th {
+    font-family:'Inter';
+    font-size: 15px;
+}
+
+
+.dropdown-menu--block {
+    width: 400px;
+}
+
+.sidebar {
+    width:300px;
+}
+
+
+@media (min-width: 1200px) {
+  .content:not(.content--boxed):not(.content--full) {
+    padding: 102px 30px 0 300px; } }

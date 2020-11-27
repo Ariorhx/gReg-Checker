@@ -1,0 +1,32 @@
+function SaveColorTheme(Theme) {
+    localStorage.ColorTheme = Theme;
+
+}
+
+$('input[id^="ColorThemeRadio_"]').change(function () {
+    SaveColorTheme(this.value);
+});
+
+function CheckColorThemeButton(Color) {
+//    $("#ColorThemeRadio_Cyan").parent().addClass("active");
+//    $("#ColorThemeRadio_Grey").prop("checked", false);
+
+    $('input[id^="ColorThemeRadio_"]').prop("checked", false);
+    $('input[id^="ColorThemeRadio_"]').parent().removeClass("active");
+
+    var ColorList = ['green', 'blue', 'red', 'orange', 'teal', 'cyan', 'blue-grey', 'purple', 'indigo', 'lime'];
+    if (ColorList.indexOf(Color) >= 0) {
+        $('#ColorThemeRadio_'+Color.charAt(0).toUpperCase()+Color.slice(1)).prop("checked", true);
+        $('#ColorThemeRadio_'+Color.charAt(0).toUpperCase()+Color.slice(1)).parent().addClass("active");
+
+    }
+
+}
+
+$(document).ready(function () {
+    if (localStorage.ColorTheme) {
+        CheckColorThemeButton(localStorage.ColorTheme);
+    }
+
+});
+

@@ -1,0 +1,154 @@
+/* global Cart */
+
+
+// Load image by image
+var ImageAlreadyLoading = 0;
+function LoadNextVisibleItemImage() {
+    if (ImageAlreadyLoading < 3) {
+        var One = $('[data-item-photo][src="LoadingItemPhoto.svg"]:visible').first();
+
+        if (One.attr("data-src")) {
+            One.attr("src", One.attr("data-src"));
+
+            ImageAlreadyLoading++;
+            LoadNextVisibleItemImage();
+
+            One.one("load", function () {
+                setTimeout(function () {
+                    ImageAlreadyLoading--;
+                    LoadNextVisibleItemImage();
+                }, 100);
+            });
+        }
+
+    }
+}
+
+// Start loading upon page loaded
+$(function () {
+    var WaitForPageLoader = function () {
+        if ($(".page-loader").is(":visible")) {
+            setTimeout(WaitForPageLoader, 10);
+        } else {
+            LoadNextVisibleItemImage();
+        }
+    };
+    WaitForPageLoader();
+});
+
+
+// Focus search field
+$(document).ready(function () {
+    $("#SearchCard input").focus();
+});
+
+
+// Это не требуется, кнопки сами себя обновляют
+$(document).on("CartUpdate", function () {
+    $("#Items div[data-id]").each(function () {
+        var ItemInCartCount = Cart.GetCartItemCount($(this).data("id"));
+
+
+        if (ItemInCartCount) {
+            $(this).find("b").each(function () {
+                $(this).html(ItemInCartCount);
+            });
+
+            $(this).find("div[data-in-cart='Yes']").each(function () {
+                $(this).slideDown();
+            });
+
+            $(this).find("div[data-in-cart='No']").each(function () {
+                $(this).slideUp();
+            });
+        } else {
+
+            $(this).find("div[data-in-cart='Yes']").each(function () {
+                $(this).slideUp();
+            });
+
+            $(this).find("div[data-in-cart='No']").each(function () {
+                $(this).slideDown();
+            });
+        }
+    });
+});
+
+
+
+$("#Filters_Card").find("input[type=checkbox]").on("change", function () {
+    FilterProducts();
+});
+
+
+
+
+$("#SearchCard input[type=text]").on("keyup keypress blur change", function () {
+    FilterProducts();
+});
+
+function FilterProducts() {
+    // Materials
+    var Materials = [];
+    $("#MaterialCheckboxes").find("input[type=checkbox]").each(function () {
+        if ($(this).prop("checked")) {
+            Materials.push($(this).data("search"));
+        }
+    });
+
+
+    // Sizes
+    var Sizes = [];
+    $("#SizeCheckboxes").find("input[type=checkbox]").each(function () {
+        if ($(this).prop("checked")) {
+            Sizes.push($(this).data("search").replace(" ",""));
+        }
+    });
+    
+
+    var SearchStringArray = $("#SearchCard input").val().toLowerCase().replace(/[её]/g, "е").split(" ");
+
+
+    $("#Items").children("div").each(function () {
+        var ProductString = ($(this).data("title") + " " + $(this).data("material") + " " + $(this).data("size") + " " + $(this).data("color")).toLowerCase().replace(/[её]/g, "е");
+
+
+
+        if (($.inArray($(this).data("material"), Materials) === -1) && (!$(this).data("filler"))) {
+            $(this).slideUp();
+        } else if (($.inArray($(this).data("size"), Sizes) === -1) && (!$(this).data("filler"))) {
+            $(this).slideUp();
+        } else {
+            if (SearchStringArray.length && (!$(this).data("filler"))) {
+                var AllSearchPartAreIncluded = true;
+
+                SearchStringArray.forEach(function (Search) {
+                    if (Search) {
+                        if (ProductString.indexOf(Search) === -1) {
+                            AllSearchPartAreIncluded = false;
+                        }
+                    }
+                });
+
+
+                if (AllSearchPartAreIncluded) {
+                    $(this).slideDown();
+                } else {
+                    $(this).slideUp();
+
+                }
+
+            } else {
+                $(this).slideDown();
+            }
+        }
+    });
+
+    LoadNextVisibleItemImage();
+
+}
+
+$(document).ready(function () {
+    $('body').off('blur', '.search__text');
+});
+

@@ -1,0 +1,98 @@
+var CatalogItemDetailsLib = {
+    OpenedItemID: null,
+    Modal: $("#CatalogItemDetailsModal"),
+    Internal: {}
+};
+
+
+
+
+
+// On start opening
+$('#CatalogItemDetailsModal').on('show.bs.modal', function (e) {
+    $("#CatalogItemDetailsModal [data-large-image").prop("src", "LoadingItemPhoto.svg");
+    $("#CatalogItemDetailsModal [data-item-full-name").empty();
+});
+
+// On modal opened
+$('#CatalogItemDetailsModal').on('show.bs.modal', function (e) {
+    // Окно 
+    let M = CatalogItemDetailsLib.Modal;
+
+    // Загрузить наличие на складе
+    M.find("[data-warehouse-count]").html("");
+    CallFunction("Warehouse", "GetAvailableCount", {CatalogItemID: CatalogItemDetailsLib.OpenedItemID}, function (A) {
+        if (A.AvailableCount) {
+            M.find("[data-warehouse-count]").html(A.AvailableCount + " шт");
+        } else {
+            M.find("[data-warehouse-count]").html("3-7 дней");
+        }
+    });
+    // Загрузить наличие на складе
+
+
+
+    CallFunction("Catalog", "GetItemInfo", {ItemID: CatalogItemDetailsLib.OpenedItemID}, function (C) {
+        // C - catalog item info
+
+
+
+        // Установка фото
+        if (C.Photos && C.Photos.length) {
+            $("#CatalogItemDetailsModal [data-large-image").prop("src", "Photos/P" + C.Photos[0].ID + ".jpg");
+        }
+        // Установка фото
+
+
+        // Обновить кнопку "В корзину"
+        CartLib.ChangeCatalogItemForShoppingCartButtonWithLoadedItemInfo(M.find("[data-shopping-cart-button]"), C);
+        // Обновить кнопку "В корзину"
+
+
+
+        // Название товара
+        if (ItemHasTag(C, "Филамент")) {
+            let D = $("<div>").addClass("row w-100").appendTo($("#CatalogItemDetailsModal [data-item-full-name]"));
+
+            $("<div>").addClass("col text-left").append($("<h5>").addClass("modal-title").html(C.Title)).appendTo(D);
+
+            $("<div>").addClass("col text-center").append($("<h5>").addClass("modal-title").html(GetTagOfGroup(C.Tags, "Материал").Title)).appendTo(D);
+            $("<div>").addClass("col text-center").html(GetTagOfGroup(C.Tags, "Фасовка").Title).appendTo(D);
+            $("<div>").addClass("col text-right").html(GetTagOfGroup(C.Tags, "Диаметр").Title).appendTo(D);
+        } else {
+            $("#CatalogItemDetailsModal [data-item-full-name]").append($("<h5>").addClass("modal-title").html(C.FullName));
+        }
+        // Название товара
+
+
+
+        // Описание товара
+        $("#CatalogItemDetailsModal [data-site-content]").html(C.SiteDescriptionHTML);
+        // Описание товара
+
+
+
+    }, $("#CatalogItemDetailsModal .modal-content"));
+
+});
+
+
+// Open item details
+CatalogItemDetailsLib.Open = function (ItemID) {
+    CatalogItemDetailsLib.OpenedItemID = ItemID;
+    $("#CatalogItemDetailsModal").modal("show");
+};
+
+
+// Parse URI
+CatalogItemDetailsLib.Internal.ParseHash = function () {
+    let M = window.location.hash.match(/OpenCatalogItemDetails=([0-9]+)/);
+    if (M) {
+        CatalogItemDetailsLib.OpenedItemID = M[1];
+        $("#CatalogItemDetailsModal").modal("show");
+    }
+};
+
+
+// When page is opened
+$(CatalogItemDetailsLib.Internal.ParseHash);

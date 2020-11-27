@@ -87,7 +87,6 @@ public abstract class Filament {
 		if (!this.color.equals( f.color )) return false;
 		if (!this.material.equals( f.material )) return false;
 		if (!(this.length == f.length)) return false; 
-		if (!(this.number == f.number)) return false;
 		
 		return true;
 	}

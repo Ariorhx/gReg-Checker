@@ -1,9 +1,8 @@
 package Test.GregFastCheck;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -11,47 +10,35 @@ import org.jsoup.select.Elements;
 
 public class Internet {
 	
-	private Document doc;
-	private Elements elem;
+	private ArrayList<String> results = new ArrayList<>();
 	
-	private ArrayList<String> colors = new ArrayList<>();
-	private ArrayList<String> materials = new ArrayList<>();
-	private ArrayList<Integer> lengths = new ArrayList<>();
-	private ArrayList<Integer> numbers = new ArrayList<>();
-	
-	static Pattern p = Pattern.compile("\\d+");
-	static Matcher m;
-	
-	public Elements getElem() {
-		return elem;
+	public ArrayList<String> getResults() {
+		return results;
 	}
-	public ArrayList<String> getColors() {
-		return colors;
-	}
-	public ArrayList<String> getMaterials() {
-		return materials;
-	}
-	public  ArrayList<Integer> getLengths() {
-		return lengths;
-	}
-	public  ArrayList<Integer> getNumbers() {
-		return numbers;
-	}
-	
+
 	Internet() throws IOException{
-		 doc = Jsoup.connect("https://greg-3d.ru/Expendables.Filament.php")
+		Document doc = Jsoup.connect("https://greg-3d.ru/Expendables.Filament.php")
 		            .userAgent("Chrome/86.0.4240.198 Safari/537.36")
 		            .referrer("http://www.google.com")
 		            .get();
-		 
-		 set_data();
+		 set_data(doc);
 	}
 	
-	public void set_data() {
+	Internet(String test) throws IOException{
+		if(!test.equals("test")) {
+			new Internet();
+			return;
+		}
+		Document doc = Jsoup.parse(new File
+				("gReg - производитель расходных материалов для 3D печати.html"),
+				"UTF-8", "http://example.com/");
+		 set_data(doc);
+	}
+	
+	public void set_data(Document doc) {
 		Elements filament_data = doc.select("div.card");
-		int size = filament_data.size();
 		
-		for(int i=0; i<size; i++) {
+		for(int i=0; i<filament_data.size(); i++) {
 			
 			String length = filament_data.get(i).select("div.card-body > div > div:nth-child(2)").text();
 			String number = filament_data.get(i).select("> div > div:nth-child(1)").text();
@@ -62,16 +49,11 @@ public class Internet {
 					color.equals("")  | material.equals("") ) 
 				continue;
 			
-			m = p.matcher(length);
-			m.find();
-			lengths.add( Integer.parseInt(m.group(0)) );
+			results.add(color);
+			results.add(material);
+			results.add(length);
+			results.add(number);
 			
-			m = p.matcher(number);
-			m.find();
-			numbers.add( Integer.parseInt(m.group(0)) );
-			
-			colors.add( color );
-			materials.add( material );
 		}
 	}
 	
