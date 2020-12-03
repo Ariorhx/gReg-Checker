@@ -1,0 +1,322 @@
+var RegisterAction = "SendData";
+
+$('#RegistrationModal').on('show.bs.modal', function (e) {
+    $("#SendDataForm").slideDown(1);
+    $("#SendCodeForm").slideUp(1);
+    RegisterAction = "SendData";
+
+    ClearInputError($("#RegistrationModal :input[name='EMail']"));
+
+
+    $("#RegistrationModal :input[name='Code']").removeClass("form-control-danger");
+    $("#RegistrationModal :input[name='Code']").closest("div").removeClass("has-danger");
+});
+
+$('#RegistrationModal').on('shown.bs.modal', function (e) {
+    $("#RegistrationModal :input[name='EMail']").focus();
+});
+
+// Clear error on start input
+$("#RegistrationModal :input[name='EMail']").focus(function () {
+    ClearInputError($("#RegistrationModal :input[name='EMail']"));
+});
+$("#RegistrationModal :input[name='Password1']").focus(function () {
+    ClearInputError($("#RegistrationModal :input[name='Password1']"));
+});
+$("#RegistrationModal :input[name='Password2']").focus(function () {
+    ClearInputError($("#RegistrationModal :input[name='Password2']"));
+});
+
+function RegisterDataSubmit() {
+    // Check passwords
+    if (!$("#RegistrationModal :input[name='EMail']").val()) {
+        SetInputError($("#RegistrationModal :input[name='EMail']"), "E-Mail не указан");
+    } else if (!$("#RegistrationModal :input[name='Password1']").val()) {
+        SetInputError($("#RegistrationModal :input[name='Password1']"), "Пустой пароль");
+    } else if (!$("#RegistrationModal :input[name='Password2']").val()) {
+        SetInputError($("#RegistrationModal :input[name='Password2']"), "Пустой пароль");
+    } else if ($("#RegistrationModal :input[name='Password1']").val() !== $("#RegistrationModal :input[name='Password2']").val()) {
+        SetInputError($("#RegistrationModal :input[name='Password1']"), "Пароли не совпадают");
+        SetInputError($("#RegistrationModal :input[name='Password2']"), "Пароли не совпадают");
+    } else {
+        // Prechecks are passed
+        SubmitToURL($("#SendDataForm"), "SendCode.php", {}, function (Result) {
+            if (Result.Result === "OK") {
+                $("#SendDataForm").slideUp();
+                $("#SendCodeForm").slideDown(400, function () {
+                    $("#RegistrationModal :input[name='Code']").focus();
+                });
+                RegisterAction = "SendCode";
+            } else if (Result.Reason === "EMail exists") {
+                swal({
+                    title: "E-Mail уже зарегистрирован",
+                    text: "",
+                    type: 'warning',
+                    buttonsStyling: false,
+                    confirmButtonClass: 'btn btn-primary'
+                });
+            } else {
+                NotifyHardError("Ошибка обработки запроса");
+            }
+        }, $("#RegistrationModal .modal-content"));
+    }
+}
+
+function RegisterCodeSubmit() {
+    SubmitOLD($("#SendCodeForm"), "Clients", "CheckRegistrationCode", {"EMail": $("#RegistrationModal :input[name='EMail']").val()}, function (Result) {
+        if (Result.Result === "OK") {
+            // Login
+            $("#LoginFormAfterRegistration :input[name='EMail']").val($("#RegistrationModal :input[name='EMail']").val());
+            $("#LoginFormAfterRegistration :input[name='Password']").val($("#RegistrationModal :input[name='Password1']").val());
+
+            SubmitToURL($("#LoginFormAfterRegistration"), "Login.php", {}, function (Result) {
+                if (Result.Result === "OK") {
+                    $('#RegistrationModal').modal("hide");
+
+                    swal({
+                        title: 'Всё отлично!',
+                        text: 'Добро пожаловать на сайт Greg. Вы уже авторизованы, можно продолжать работу.',
+                        type: 'success',
+                        buttonsStyling: false,
+                        confirmButtonClass: 'btn btn-primary'
+                    }).then(function () {
+                        location.reload();
+                    });
+                } else {
+                    swal({
+                        title: 'Что-то пошло не так...',
+                        text: 'Регистрация успешно пройдена, но не удаётся войти на сайт. Пожалуйста, попробуйте обновить страницу.',
+                        type: 'warning',
+                        buttonsStyling: false,
+                        confirmButtonClass: 'btn btn-primary'
+                    }).then(function () {
+                        location.reload();
+                    });
+                }
+            });
+
+        } else {
+            SetInputError($("#RegistrationModal :input[name='Code']"));
+        }
+    }, $("#RegistrationModal .modal-content"));
+}
+
+$("#RegisterSubmitButton").on("click", function () {
+    if (RegisterAction === "SendData") {
+        RegisterDataSubmit();
+    } else if (RegisterAction === "SendCode") {
+        RegisterCodeSubmit();
+    }
+});
+
+$("#SendDataForm").submit(function () {
+    RegisterDataSubmit();
+    return false;
+});
+$("input[name='Password2']").keyup(function (e) {
+    if (e.keyCode === 13) {
+        RegisterDataSubmit();
+    }
+});
+
+$("#SendCodeForm").submit(function () {
+    RegisterCodeSubmit();
+    return false;
+});
+
+
+
+
+
+$('#LoginModal').on('shown.bs.modal', function (e) {
+    $("#LoginModal :input[name='EMail']").focus();
+});
+
+function Login(Form) {
+    // Check passwords
+    if (!$("input[name='EMail']", Form).val()) {
+        SetInputError($("input[name='EMail']", Form), "Пожалуйста, укажите");
+    } else {
+        ClearInputError($("input[name='EMail']", Form));
+
+        if (!$("input[name='Password']", Form).val()) {
+            SetInputError($("input[name='Password']", Form), "Укажите пароль");
+            $(":input[name='Password']", Form).focus();
+        } else {
+            ClearInputError($("input[name='Password']", Form));
+
+            SubmitToURL(Form, "Authenticate.php", {}, function (Result) {
+                if (Result.Result === "OK") {
+                    $('#LoginModal').modal("hide");
+
+                    location.reload();
+                } else {
+                    if (Result.Reason === "NoSuchEmail") {
+                        SetInputError($(":input[name='EMail']", Form), "Нет такого пользователя");
+                    } else {
+                        SetInputError($(":input[name='Password']", Form), "Неверный пароль");
+                    }
+                }
+            }, Form);
+        }
+    }
+
+
+
+}
+
+$("#LoginForm").submit(function () {
+    Login($(this));
+    return false;
+});
+
+
+$("#RegisterLinkButton").on("click", function () {
+    $('#LoginModal').modal("hide");
+    $('#RegistrationModal').modal();
+
+});
+
+$("#ChangePasswordLinkButton").on("click", function () {
+    $('#LoginModal').modal("hide");
+    $('#ChangePasswordModal').modal();
+
+});
+
+
+// Remind password
+
+var ChangePasswordAction = "SendData";
+
+
+function ChangePassword_DataSubmit() {
+    // Check passwords
+    if (!$("#ChangePasswordModal :input[name='EMail']").val()) {
+        SetInputError($("#ChangePasswordModal :input[name='EMail']"), "E-Mail не указан");
+    } else if (!$("#ChangePasswordModal :input[name='Password1']").val()) {
+        SetInputError($("#ChangePasswordModal :input[name='Password1']"), "Пустой пароль");
+    } else if (!$("#ChangePasswordModal :input[name='Password2']").val()) {
+        SetInputError($("#ChangePasswordModal :input[name='Password2']"), "Пустой пароль");
+    } else if ($("#ChangePasswordModal :input[name='Password1']").val() !== $("#ChangePasswordModal :input[name='Password2']").val()) {
+        SetInputError($("#ChangePasswordModal :input[name='Password1']"), "Пароли не совпадают");
+        SetInputError($("#ChangePasswordModal :input[name='Password2']"), "Пароли не совпадают");
+    } else {
+        // Prechecks are passed
+        SubmitToURL($("#ChangePassword_DataForm"), "SendCode.php", {ForPasswordChange: true}, function (Result) {
+            if (Result.Result === "OK") {
+                $("#ChangePassword_DataForm").slideUp();
+                $("#ChangePassword_CodeForm").slideDown(400, function () {
+                    $("#ChangePasswordModal :input[name='Code']").focus();
+                });
+                ChangePasswordAction = "SendCode";
+            } else if (Result.Reason === "EMail does not exist") {
+                swal({
+                    title: "E-Mail не зарегистрирован",
+                    text: "",
+                    type: 'warning',
+                    buttonsStyling: false,
+                    confirmButtonClass: 'btn btn-primary'
+                });
+            } else {
+                NotifyHardError("Ошибка обработки запроса");
+            }
+        }, $("#ChangePasswordModal .modal-content"));
+    }
+}
+
+
+
+
+function ChangePasswordCodeSubmit() {
+    SubmitOLD($("#ChangePassword_CodeForm"), "Clients", "CheckChangePasswordCode", {"EMail": $("#ChangePasswordModal :input[name='EMail']").val()}, function (Result) {
+        if (Result.Result === "OK") {
+            // Login
+            $("#LoginFormAfterChangePassword :input[name='EMail']").val($("#ChangePasswordModal :input[name='EMail']").val());
+            $("#LoginFormAfterChangePassword :input[name='Password']").val($("#ChangePasswordModal :input[name='Password1']").val());
+
+            SubmitToURL($("#LoginFormAfterChangePassword"), "Login.php", {}, function (Result) {
+                if (Result.Result === "OK") {
+                    $('#ChangePasswordModal').modal("hide");
+
+                    swal({
+                        title: 'Всё отлично!',
+                        text: 'Пароль изменён. Вы уже авторизованы, можно продолжать работу.',
+                        type: 'success',
+                        buttonsStyling: false,
+                        confirmButtonClass: 'btn btn-primary'
+                    }).then(function () {
+                        location.reload();
+                    });
+                } else {
+                    swal({
+                        title: 'Что-то пошло не так...',
+                        text: 'Смена пароля произошла, но не удаётся войти на сайт. Пожалуйста, попробуйте обновить страницу.',
+                        type: 'warning',
+                        buttonsStyling: false,
+                        confirmButtonClass: 'btn btn-primary'
+                    }).then(function () {
+                        location.reload();
+                    });
+                }
+            });
+
+        } else {
+            SetInputError($("#ChangePasswordModal :input[name='Code']"));
+        }
+    }, $("#ChangePasswordModal .modal-content"));
+}
+
+
+
+$('#ChangePasswordModal').on('show.bs.modal', function (e) {
+    $("#ChangePassword_DataForm").slideDown(1);
+    $("#ChangePassword_CodeForm").slideUp(1);
+
+    ChangePasswordAction = "SendData";
+});
+
+
+$('#ChangePasswordModal').on('shown.bs.modal', function (e) {
+
+    if ($("#LoginModal :input[name='EMail']").val()) {
+        $("#ChangePasswordModal :input[name='EMail']").val($("#LoginModal :input[name='EMail']").val());
+        $("#ChangePasswordModal :input[name='EMail']").focus();
+
+        $("#ChangePasswordModal :input[name='Password1']").focus();
+    } else {
+        $("#ChangePasswordModal :input[name='EMail']").focus();
+    }
+});
+
+
+
+
+$("#SendEMailRemindForm").submit(function () {
+    ChangePassword_DataSubmit();
+    return false;
+});
+
+$("#SendCodeRemindForm").submit(function () {
+    RemindCodeSubmit();
+    return false;
+});
+
+$("#ChangePassword_SubmitButton").on("click", function () {
+    if (ChangePasswordAction === "SendData") {
+        ChangePassword_DataSubmit();
+    }
+
+    if (ChangePasswordAction === "SendCode") {
+        ChangePasswordCodeSubmit();
+    }
+});
+
+
+
+
+
+$("#LoggedInLeftProfileInfo").on("click", function () {
+    location.href = "Personal.php";
+});
+
+

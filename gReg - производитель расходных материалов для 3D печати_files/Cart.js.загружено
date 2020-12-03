@@ -1,0 +1,434 @@
+var CartLib = {
+    OpenedCatalogItemID: null,
+    ItemModal: $("#CartItemModal")
+};
+
+
+
+
+
+
+
+// Обновить все места на странице, где написана цена товаров и доставки
+CartLib.UpdateAllItemsPricesOnPage = function () {
+
+    // Обновить везде цену товаров
+    if (CartOrderInfo.ItemsPrice) {
+        $("[data-items-price-autoupdate]").html(FormatNumber(CartOrderInfo.ItemsPrice, 0));
+    } else {
+        if (CartOrderInfo.ItemsPrice) {
+            $("[data-items-price-autoupdate]").html("--");
+        }
+    }
+
+    // Обновить везде цену доставки
+    $("[data-delivery-method-id-price-autoupdate]").each(function () {
+        let DeliveryMethodID = $(this).data("delivery-method-id-price-autoupdate");
+
+        let DeliveryCost = GetDeliveryCostFromOrderInfo(CartOrderInfo, DeliveryMethodID);
+        if (DeliveryCost) {
+            $(this).removeClass("d-none");
+
+            $(this).find("[data-delivery-cost]").html(FormatNumber(DeliveryCost));
+
+            let PackageCost = CartOrderInfo.Packages.TotalPriceAtOrderMoment;
+
+            if (PackageCost) {
+                $(this).find("[data-packing-cost]").removeClass("d-none");
+                $(this).find("[data-packing-cost] span").html(PackageCost);
+            } else {
+                $(this).find("[data-packing-cost]").addClass("d-none");
+            }
+
+        } else {
+            $(this).addClass("d-none");
+        }
+    });
+
+
+    // Обновить везде полную стоимость заказа
+    $("[data-delivery-method-id-full-price-autoupdate]").each(function () {
+        let DeliveryMethodID = $(this).data("delivery-method-id-full-price-autoupdate");
+
+        let DeliveryCost = GetDeliveryCostFromOrderInfo(CartOrderInfo, DeliveryMethodID);
+        let PackageCost = CartOrderInfo.Packages.TotalPriceAtOrderMoment;
+        
+        $(this).html(FormatNumber(CartOrderInfo.ItemsPrice + (DeliveryCost ? DeliveryCost : 0) + ((DeliveryCost && PackageCost) ? PackageCost : 0)));
+    });
+
+};
+
+// Отобразить при загрузке цены товаров везде на странице
+$(function () {
+    CartLib.UpdateAllItemsPricesOnPage();
+});
+
+// При обновлении корзины
+$(document).on("CartUpdate", function () {
+    CartLib.UpdateAllItemsPricesOnPage();
+});
+
+
+
+// Установить другой товар для конпки "в корзину"
+CartLib.ChangeCatalogItemForShoppingCartButtonWithLoadedItemInfo = function (Button, ItemInfo) {
+    let I = ItemInfo;
+
+    Button.data("item-id", I.ID);
+
+    var ItemInCartCount = Cart.GetCartItemCount(Button.data("item-id"));
+
+    // Количество в корзине
+    Button.find("[data-count-in-cart]").html(ItemInCartCount);
+    Button.data("count-in-cart", ItemInCartCount);
+
+    // Стоимость
+    Button.find("[data-price]").html(I.PriceCategoryInfo.Prices[0].Price);
+
+    if (ItemInCartCount) {
+        Button.find("[data-not-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").css({opacity: 0});
+        Button.find("[data-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").css({opacity: 1});
+    } else {
+        Button.find("[data-not-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").css({opacity: 1});
+        Button.find("[data-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").css({opacity: 0});
+    }
+
+};
+// Установить другой товар для конпки "в корзину"
+
+// Установить другой товар для конпки "в корзину"
+CartLib.ChangeCatalogItemForShoppingCartButton = function (Button, CatalogItemID, ItemInfo = null) {
+    CallFunction("Catalog", "GetItemInfo", {ItemID: CatalogItemID}, function (I) {
+        ChangeCatalogItemForShoppingCartButtonWithLoadedItemInfo(Button, I);
+    }, Button, true);
+};
+// Установить другой товар для конпки "в корзину"
+
+
+// Открыть окно количества товара в корзине
+CartLib.OpenCountInCartModal = function (ItemID) {
+    CartLib.OpenedCatalogItemID = ItemID;
+    CartLib.ItemModal.modal();
+};
+// Открыть окно количества товара в корзине
+
+
+// Нажатие на кнопку "в корзину"
+$("[data-shopping-cart-button]").click(function () {
+    CartLib.OpenCountInCartModal($(this).data("item-id"));
+});
+// Нажатие на кнопку "в корзину"
+
+
+
+// При обновлении корзины найти все кнопки и обновить внешний вид
+$(document).on("CartUpdate", function () {
+    $("[data-shopping-cart-button]").each(function () {
+        var ItemInCartCount = Cart.GetCartItemCount($(this).data("item-id"));
+
+
+        if ($(this).data("count-in-cart") > 0 != ItemInCartCount > 0) {
+
+            if (ItemInCartCount) {
+                $(this).find("[data-not-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").addClass("animated rotateOutUpLeft");
+
+                $(this).find("[data-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").addClass("animated rotateInUpLeft");
+            } else {
+                $(this).find("[data-not-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").addClass("animated rotateInUpLeft");
+
+                $(this).find("[data-in-cart]").removeClass("animated rotateOutUpLeft rotateInUpLeft").addClass("animated rotateOutUpLeft");
+            }
+
+
+            $(this).data("count-in-cart", ItemInCartCount);
+        }
+
+        // Количество в корзине
+        $(this).find("[data-count-in-cart]").html(ItemInCartCount);
+
+
+    });
+});
+// При обновлении корзины найти все кнопки и обновить внешний вид
+
+
+
+// Загрузить данные позиции из каталога при открытии окна добавления в корзину
+CartLib.ItemModal.on('show.bs.modal', function (e) {
+    CallFunction("Catalog", "GetItemInfo", {"ItemID": CartLib.OpenedCatalogItemID}, function (ItemInfo) {
+        console.log(ItemInfo);
+
+        // Уже в корзине 
+        var InCartCount = Cart.GetCartItemCount(ItemInfo.ID);
+
+        // Заголовок
+        $("#CartItemModal h5").html(ItemInfo.FullName);
+
+
+        // Окно ввода количества
+        $("#CartItemModal input").val(InCartCount ? InCartCount : 1);
+
+        // Очистить строчки скидок
+        CartLib.ItemModal.find('tbody').empty();
+
+        // Строчки скидки от количества
+        ItemInfo.PriceCategoryInfo.Prices.forEach(function (Price) {
+            $('<tr data-count="' + Price.Count + '" data-price="' + Price.Price + '">').append(
+                    $('<td>').html("<div>От " + Price.Count + " шт.</div>"),
+                    $('<td>').html("<div>" + Price.Price + " руб.</div>")
+                    ).appendTo(CartLib.ItemModal.find('tbody'));
+        });
+
+        // Нажатие на строчку с количеством
+        CartLib.ItemModal.find("tr").click(function () {
+            if ($(this).data("count")) {
+                CartLib.ItemModal.find("input").val($(this).data("count"));
+                HighLightPriceCategory($(this).data("count"));
+            }
+        });
+
+
+        LastCount = null;
+
+        //$("#CartItemModal input").focus();
+        //$("#CartItemModal input").select();
+        HighLightPriceCategory();
+
+
+    }, CartLib.ItemModal.find(".modal-content"));
+});
+// Загрузить данные позиции из каталога при открытии окна добавления в корзину
+
+
+
+
+
+
+
+CartLib.RefreshCartOrder = function () {
+
+
+    // Надо    перевести систему на эту функцию.
+    // Иначе получается логически неверно запрашивать расчёт доставки а в ответ получать данные заказа
+
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+// Устарело, нужно использовать CartLib
+var Cart = {
+};
+
+function UpdateTopCart() {
+
+    CallFunction("Cart", "GetCartOrderInfo", {}, function (CartObjectInfo) {
+        if (CartObjectInfo.ItemsPrice) {
+            $("#TopCartTotal").fadeIn();
+            $("#TopCartTotal").html(FormatNumber(CartObjectInfo.ItemsPrice) + ".-");
+        } else {
+            $("#TopCartTotal").fadeOut();
+            $("#TopCartTotal").html("");
+        }
+
+        $("#TopCartContent").empty();
+
+        var Counter = 0;
+        var ShowAmount = 7;
+        var NeedToLimit = false;
+
+        if (CartObjectInfo.Items.length > ShowAmount) {
+            NeedToLimit = true;
+            ShowAmount--;
+        }
+
+        // Show items with limit
+        CartObjectInfo.Items.forEach(function (Item) {
+            Counter++;
+            if (Counter <= ShowAmount) {
+                // Create clickable div
+                var Div = $("<div/>", {class: "listview__item", style: "cursor:pointer"});
+                Div.on("click", function () {
+                    CartLib.OpenCountInCartModal(Item.OrderItemInfo.CatalogItem.ID);
+                });
+
+                // Discount calculation, if any
+                var PriceFormula = "";
+                if (Item.ItemPriceAccordingToCountAndDate < Item.OrderItemInfo.CatalogItem.PriceCategoryInfo.Prices[0].Price) {
+                    PriceFormula = FormatNumber(Item.Count) + ' x (' + FormatNumber(Item.OrderItemInfo.CatalogItem.PriceCategoryInfo.Prices[0].Price) + ' - <span class="text-success">' + (Item.OrderItemInfo.CatalogItem.PriceCategoryInfo.Prices[0].Price - Item.ItemPriceAccordingToCountAndDate) + '</span>) = ' + FormatNumber(Item.TotalPriceWithModificators);
+                } else {
+                    PriceFormula = FormatNumber(Item.Count) + ' x ' + FormatNumber(Item.PriceWithModificators) + ' = ' + FormatNumber(Item.TotalPriceWithModificators);
+                }
+
+                let ExtraTitle = "";
+                if (ItemHasTag(Item, "Филамент")) {
+                    ExtraTitle = '       <span class="float-left">' + GetTagOfGroup(Item.Tags, "Материал").Title + ' ' + GetTagOfGroup(Item.Tags, "Фасовка").Title + ' ' + GetTagOfGroup(Item.Tags, "Диаметр").Title + '</span>';
+                }
+
+
+                let Photo = "Images/NoImage.TopCart.png";
+
+                if (Item.OrderItemInfo.CatalogItem.Photos && Item.OrderItemInfo.CatalogItem.Photos.length) {
+                    Photo = "Photos/P" + Item.OrderItemInfo.CatalogItem.Photos[0].ID + ".jpg";
+                }
+
+                // Append all other info
+                Div.append(
+                        '<img src="' + Photo + '" class="listview__img" style="width:39px;height:30px;">' +
+                        '<div class="listview__content">' +
+                        '   <div class="listview__heading">' +
+                        ' ' + Item.Title + ' <small>' + PriceFormula + ' руб</small>' +
+                        '   </div>' +
+                        '<p>' +
+                        ExtraTitle +
+                        '</p>' +
+                        '</div>'
+                        );
+
+                // Append div to top cart
+                $("#TopCartContent").append(Div);
+            }
+        });
+
+        // If there are more items in the cart
+        if (NeedToLimit) {
+            $("#TopCartContent").append(
+                    '   <div class="listview__item d-flex justify-content-center align-items-center" style="height:70px;">' +
+                    '       <span>В корзине ещё ' + (CartObjectInfo.List.length - ShowAmount) + ' ' + NounToNumber(CartObjectInfo.List.length - ShowAmount, 'това[р|ра|ров]') + '</span>' +
+                    '   </div>'
+                    );
+        }
+
+    });
+}
+
+$(document).ready(function () {
+    UpdateTopCart();
+});
+
+// CartUpdate is a document trigger, called by add/edit cart functions
+$(document).on("CartUpdate", UpdateTopCart);
+
+// Get catalog items count in current cart order
+Cart.GetCartItemCount = function (CatalogItemID) {
+    for (var i = 0; i < CartOrderInfo.Items.length; i++) {
+        if (CatalogItemID === CartOrderInfo.Items[i].OrderItemInfo.CatalogItem.ID) {
+            return CartOrderInfo.Items[i].Count;
+        }
+    }
+
+    return 0;
+};
+
+
+// Нажатие Enter в поле ввода количества
+CartLib.ItemModal.find("input").on('keypress', function (e) {
+    if (e.which === 13) {
+        SetCartItemCount(CartLib.OpenedCatalogItemID, $(this).val());
+    }
+});
+// Нажатие Enter в поле ввода количества
+
+
+
+// Нажатие на кнопку "Сохранить"
+CartLib.ItemModal.find("[data-save-button]").click(function () {
+    SetCartItemCount(CartLib.OpenedCatalogItemID, CartLib.ItemModal.find("input").val());
+});
+// Нажатие на кнопку "Сохранить"
+
+
+
+
+
+
+// Нажатие на кнопку "Удалить"
+CartLib.ItemModal.find("[data-remove-button]").click(function () {
+    SetCartItemCount(CartLib.OpenedCatalogItemID, 0);
+});
+// Нажатие на кнопку "Удалить"
+
+
+
+// Кнопка минус в окне выбора количества в корзине
+CartLib.ItemModal.find("[data-button-minus]").click(function () {
+    let I = CartLib.ItemModal.find("input");
+    if (I.val() > 1) {
+        I.val(I.val() * 1 - 1);
+    }
+
+    HighLightPriceCategory(I.val());
+});
+// Кнопка минус в окне выбора количества в корзине
+
+
+// Кнопка плюс в окне выбора количества в корзине
+CartLib.ItemModal.find("[data-button-plus]").click(function () {
+    let I = CartLib.ItemModal.find("input");
+    I.val(I.val() * 1 + 1);
+    HighLightPriceCategory(I.val());
+
+});
+// Кнопка плюс в окне выбора количества в корзине
+
+
+function HighLightPriceCategory() {
+
+    var LastMatched = null;
+    var LastMatchedCount = 0;
+    var LastMatchedPrice = 0;
+
+    $("#CartItemModal div").removeClass('flash');
+
+    $("#CartItemModal tr").each(function () {
+        if ($(this).data("count") <= $("#CartItemModal input").val()) {
+            LastMatched = $(this);
+            LastMatchedCount = $(this).data("count");
+            LastMatchedPrice = $(this).data("price");
+        }
+    });
+
+    CartLib.ItemModal.find("[data-total-price]").html(FormatNumber(LastMatchedPrice * $("#CartItemModal input").val()));
+
+    if (LastCount !== LastMatchedCount) {
+
+        $("#CartItemModal tr").css({"font-weight": "normal"});
+        LastMatched.css({"font-weight": "bold"});
+
+        LastMatched.find("div").removeAttr('class');
+
+        LastMatched.find("div").addClass('animated flash');
+
+        setTimeout(function () {
+            LastMatched.find("div").removeClass('flash');
+        }, 800);
+
+        CartLib.ItemModal.find("[data-price-per-one]").html(FormatNumber(LastMatchedPrice));
+
+        LastCount = LastMatchedCount;
+
+    }
+
+}
+
+
+$("#CartItemModal input").on("keyup keypress blur change", function () {
+    HighLightPriceCategory($(this).val());
+});
+
+function SetCartItemCount(ItemID, Count) {
+    CallFunction("Orders", "SetCartCatalogCount", {CatalogItemID: ItemID, Count: Count}, function (Result) {
+        CartOrderInfo = Result.NewCartOrderInfo;
+        $("#CartItemModal").modal("hide");
+        $(document).trigger("CartUpdate");
+    }, $("#CartItemModal .modal-body"));
+}

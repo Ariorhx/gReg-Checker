@@ -1,0 +1,14 @@
+USE test;
+CREATE TABLE IF NOT EXISTS gregfilament(
+	id INT NOT NULL AUTO_INCREMENT, 
+	material TEXT NOT NULL, 
+	color TEXT NOT NULL, 
+	length INT NOT NULL, 
+	number INT NOT NULL,
+	PRIMARY KEY(id)
+);
+CREATE TABLE IF NOT EXISTS updatetime(
+	id INT NOT NULL AUTO_INCREMENT, 
+	update_time DATETIME,
+	PRIMARY KEY(id)
+);

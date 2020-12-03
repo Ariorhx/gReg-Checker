@@ -1,0 +1,7 @@
+function ReloadGlobalClientData(Callback,LoadingSpinnerObject) {
+    CallFunction("Clients", "GetMyInfo", '{}', function(Result) {
+        ClientInfo=Result;
+        Callback(ClientInfo);
+    }, LoadingSpinnerObject);
+            
+}

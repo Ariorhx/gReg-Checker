@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="350.0" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Test.GregFastCheck.GUIController">
+   <children>
+      <Button fx:id="update_information" layoutX="208.0" layoutY="552.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="125.0" text="update information" AnchorPane.bottomAnchor="32.0" AnchorPane.leftAnchor="137.0" />
+      <Button fx:id="update_database" layoutX="536.0" layoutY="552.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="125.0" text="write in database" AnchorPane.bottomAnchor="32.0" AnchorPane.rightAnchor="137.0" />
+      <TableView fx:id="table" layoutX="43.0" layoutY="27.0" prefHeight="530.0" prefWidth="800.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <columns>
+          <TableColumn fx:id="material_column" prefWidth="200.0" text="Material" />
+          <TableColumn fx:id="color_column" prefWidth="200.0" text="Color" />
+          <TableColumn fx:id="length_column" prefWidth="200.0" text="Length" />
+          <TableColumn fx:id="available_in_store_column" prefWidth="200.0" text="Available in store" />
+        </columns>
+      </TableView>
+      <Label fx:id="update_time_lable" layoutX="0.0" layoutY="578.0" prefWidth="800.0" text="Last information update time:" AnchorPane.bottomAnchor="5.0" />
+      <Separator layoutX="37.0" layoutY="575.0" prefWidth="200.0" AnchorPane.bottomAnchor="18.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+   </children>
+</AnchorPane>

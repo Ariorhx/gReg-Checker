@@ -1,4 +1,4 @@
-package Test.GregFastCheck;
+package Test.GregFastCheck.Arrangement;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
-public class DataBase {
+import Test.GregFastCheck.Interfaces.IDataBase;
+
+public class Greg_DataBase implements IDataBase{
 	private static final String url = "jdbc:mysql://localhost:3306/test?autoReconnect=true&useSSL=false";
 	private static final String user = "Greg";
 	private static final String password = "GregPass";
@@ -22,12 +24,6 @@ public class DataBase {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	public ResultSet request(String query) {
-		ResultSet rs = null;
-		try{ rs = stmt.executeQuery(query); } catch (SQLException e) { e.printStackTrace(); }
-		return rs;
 	}
 	
 	public ArrayList<String> request(String table_name, String ...colomns) {

@@ -1,0 +1,620 @@
+// Multi modals
+$(function () {
+
+    $(document).on({
+        'show.bs.modal': function () {
+            var zIndex = 1040 + (10 * $('.modal:visible').length);
+            $(this).css('z-index', zIndex);
+            setTimeout(function () {
+                $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+            }, 0);
+        },
+        'hidden.bs.modal': function () {
+            if ($('.modal:visible').length > 0) {
+                // restore the modal-open class to the body element, so that scrolling works
+                // properly after de-stacking a modal.
+                setTimeout(function () {
+                    $(document.body).addClass('modal-open');
+                }, 0);
+            }
+        }
+    }, '.modal');
+});
+
+
+
+function GetDeliveryCostFromOrderInfo(OrderInfo, DeliveryMethodID) {
+    if (OrderInfo.DeliveryCostInfo && OrderInfo.DeliveryCostInfo.length) {
+        for (var i = 0; i < OrderInfo.DeliveryCostInfo.length; i++) {
+            if (OrderInfo.DeliveryCostInfo[i].DeliveryMethodID == DeliveryMethodID) {
+                return OrderInfo.DeliveryCostInfo[i].Amount;
+            }
+        }
+    }
+}
+
+function CheckInputValue(InputElement, CheckFunction) {
+    var Error = CheckFunction(InputElement.val().trim());
+
+    if (!Error) {
+        ClearInputError(InputElement);
+        return true;
+    } else {
+        SetInputError(InputElement, Error);
+        return false;
+    }
+}
+
+function FormValidate(Form, CheckFunction) {
+    var AllIsOK = true;
+
+    Form.find("input[type=text]").each(function () {
+        if ($(this).data("required")) {
+            if ($(this).val().trim()) {
+                ClearInputError($(this));
+            } else {
+                AllIsOK = false;
+                SetInputError($(this), $(this).data("required-error-text"));
+            }
+        }
+    });
+
+    if (typeof (CheckFunction) === "function") {
+        AllIsOK &= CheckFunction(Form);
+    }
+
+    return AllIsOK;
+}
+
+
+function CallFunction(Scheme, Function, Parameters, OnLoadFunction, ObjectForSpinner, UseSmallSpinner) {
+    var XHR = new XMLHttpRequest();
+
+    if (ObjectForSpinner) {
+        if (UseSmallSpinner) {
+            LoadingSpinnerSmall(ObjectForSpinner);
+        } else {
+            LoadingSpinner(ObjectForSpinner);
+        }
+    }
+
+//    if (ProgressBar) {
+//        ProgressBar.show();
+//
+//        XHR.upload.addEventListener("progress", function (e) {
+//            ProgressBar.css({"width": (e.loaded * 100 / e.total) + "%"});
+//        });
+//
+//        XHR.addEventListener("progress", function (e) {
+//            ProgressBar.css({"width": (e.loaded * 100 / e.total) + "%"});
+//        });
+//
+//        XHR.addEventListener("load", function () {
+//            ProgressBar.css({"width": "100%"});
+//            if (!DoNotHideProgressBarOnFinish) {
+//                ProgressBar.hide();
+//            }
+//        }, false);
+//
+//
+//    }
+
+
+    var ParametersString = "";
+    if (typeof (Parameters) === "object") {
+        for (var Key in Parameters) {
+            if (ParametersString !== "") {
+                ParametersString += "&";
+            }
+
+            if (typeof (Parameters[Key]) === "object") {
+                ParametersString += Key + "=" + encodeURIComponent(JSON.stringify(Parameters[Key]));
+            } else {
+                ParametersString += Key + "=" + encodeURIComponent(Parameters[Key]);
+            }
+        }
+    }
+
+    XHR.open("POST", "/a.php?S=" + Scheme + "&F=" + Function, true);
+    XHR.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    XHR.send(ParametersString);
+    XHR.addEventListener("load", function () {
+        try {
+            var data = JSON.parse(XHR.responseText);
+        } catch (e) {
+            console.log("Exception while parsing \"" + "/a.php?S=" + Scheme + "&F=" + Function);
+            console.log("XHR.responseText further:");
+            console.log(XHR.responseText);
+            console.log(e);
+        }
+        if (typeof (OnLoadFunction) === "function") {
+            if (ObjectForSpinner) {
+                HideLoadingSpinner(ObjectForSpinner);
+            }
+
+            if (data.Result === "Failed") {
+                NotifyDBError(data);
+            } else {
+                OnLoadFunction(data);
+            }
+
+        }
+    });
+}
+
+
+
+
+
+function CallOLDFunction(Scheme, Function, Parameters, OnLoadFunction, Post, ObjectForSpinner) {
+    var XHR = new XMLHttpRequest();
+
+    if (ObjectForSpinner) {
+        LoadingSpinner(ObjectForSpinner);
+    }
+
+//    if (ProgressBar) {
+//        ProgressBar.show();
+//
+//        XHR.upload.addEventListener("progress", function (e) {
+//            ProgressBar.css({"width": (e.loaded * 100 / e.total) + "%"});
+//        });
+//
+//        XHR.addEventListener("progress", function (e) {
+//            ProgressBar.css({"width": (e.loaded * 100 / e.total) + "%"});
+//        });
+//
+//        XHR.addEventListener("load", function () {
+//            ProgressBar.css({"width": "100%"});
+//            if (!DoNotHideProgressBarOnFinish) {
+//                ProgressBar.hide();
+//            }
+//        }, false);
+//
+//
+//    }
+
+
+    // Enumerate parameters
+    var ParametersString = "";
+    if (typeof (Parameters) === "object") {
+        for (var Key in Parameters) {
+            ParametersString += "&" + Key + "=" + encodeURIComponent(Parameters[Key]);
+        }
+    }
+
+    XHR.open("POST", "/app.php?S=" + Scheme + "&F=" + Function + ParametersString, true);
+    XHR.send(Post);
+    XHR.addEventListener("load", function () {
+        try {
+            var data = JSON.parse(XHR.responseText);
+        } catch (e) {
+            console.log("Exception while parsing \"" + "/app.php?S=" + Scheme + "&F=" + Function + ParametersString + "\"");
+            console.log(XHR.responseText);
+            console.log(e);
+        }
+        if (typeof (OnLoadFunction) === "function") {
+            OnLoadFunction(data);
+            if (ObjectForSpinner) {
+                HideLoadingSpinner(ObjectForSpinner);
+            }
+        }
+    });
+}
+
+
+function XHRRequest(URI, OnLoadFunction, Post, ObjectForSpinner, Draw, UseSmallSpinner) {
+    var XHR = new XMLHttpRequest();
+
+    if (ObjectForSpinner) {
+        if (UseSmallSpinner) {
+            LoadingSpinnerSmall(ObjectForSpinner);
+        } else {
+            LoadingSpinner(ObjectForSpinner);
+        }
+    }
+
+
+    XHR.open("POST", URI, true);
+    XHR.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    XHR.send(Post);
+    XHR.addEventListener("load", function () {
+        let data = null;
+
+        try {
+            data = JSON.parse(XHR.responseText);
+        } catch (e) {
+            console.log("Exception while parsing \"" + URI + "\"");
+            console.log(XHR.responseText);
+            console.log(e);
+        }
+
+        if (typeof (OnLoadFunction) === "function") {
+            OnLoadFunction(data, Draw);
+
+            if (ObjectForSpinner) {
+                HideLoadingSpinner(ObjectForSpinner);
+            }
+
+        }
+    });
+
+}
+
+function CallURI(URI, Parameters, OnLoadFunction, Post, ObjectForSpinner, Draw, SmallSpinner) {
+    // Enumerate parameters
+    var ParametersString = "";
+    if (typeof (Parameters) === "object") {
+        for (var Key in Parameters) {
+            ParametersString += (ParametersString ? "&" : "?") + Key + "=" + encodeURIComponent(Parameters[Key]);
+        }
+    }
+
+    XHRRequest(URI + ParametersString, OnLoadFunction, Post, ObjectForSpinner, Draw, SmallSpinner);
+}
+
+
+function FormatNumber(Amount, ShowFraction, FractionIsOptional) {
+    if (Amount === null) {
+        return "";
+    }
+    
+    var AmountIsNegative;
+
+    if (Amount < 0) {
+        AmountIsNegative = true;
+        Amount = -Amount;
+    } else {
+        AmountIsNegative = false;
+    }
+
+    var spl = Amount.toFixed(2).split(".");
+    var Fraction = "";
+    if (ShowFraction) {
+        if (FractionIsOptional) {
+            if (spl[1] !== "00") {
+                Fraction = "." + spl[1];
+            }
+        } else {
+            Fraction = "." + spl[1];
+        }
+    }
+    spl[0] = spl[0].toString(10).replace(/^([0-9]{1,3})([0-9]{3})$/, "$1 $2");
+    spl[0] = spl[0].toString(10).replace(/^([0-9]{1,3})([0-9]{3})([0-9]{3})$/, "$1 $2 $3");
+
+    return (AmountIsNegative ? '-' : '') + spl[0] + Fraction;
+}
+
+
+function SetInputError(Input, ErrorText) {
+    Input.addClass("is-invalid");
+    Input.parent().find(".invalid-feedback").html(ErrorText);
+}
+
+function ClearInputError(Input) {
+    Input.removeClass("is-invalid");
+    Input.parent().find(".invalid-feedback").html("");
+}
+
+
+
+
+function _Notify(Text, from, align, icon, type, animIn, animOut) {
+    $.notify({
+        icon: icon,
+        title: Text,
+        url: ''
+    }, {
+        element: 'body',
+        type: type,
+        allow_dismiss: true,
+        placement: {
+            from: from,
+            align: align
+        },
+        offset: {
+            x: 20,
+            y: 20
+        },
+        spacing: 10,
+        z_index: 1031,
+        delay: 2500,
+        timer: 1000,
+        url_target: '_blank',
+        mouse_over: false,
+        animate: {
+            enter: animIn,
+            exit: animOut
+        },
+        template: '<div data-notify="container" class="alert alert-dismissible alert-{0} alert--notify" role="alert">' +
+                '<span data-notify="icon"></span> ' +
+                '<span data-notify="title">{1}</span>' +
+                '<div class="progress" data-notify="progressbar">' +
+                '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
+                '</div>' +
+                '<a href="{3}" target="{4}" data-notify="url"></a>' +
+                '</div>'
+    });
+}
+
+
+
+
+
+function NotifyHardError(Error, Subtext) {
+
+    swal({
+        title: Error,
+        text: Subtext ? Subtext : "",
+        type: 'warning',
+        buttonsStyling: false,
+        confirmButtonClass: 'btn btn-primary'
+    }).catch(swal.noop);
+
+}
+
+function AskQuestion(Text, Subtext, YesButton, CancelButton, CallBack) {
+
+    swal({
+        title: Text,
+        text: Subtext ? Subtext : "",
+        type: 'warning',
+        showCancelButton: true,
+        buttonsStyling: false,
+        confirmButtonClass: 'btn btn-danger',
+        confirmButtonText: YesButton,
+        cancelButtonClass: 'btn btn-secondary',
+        cancelButtonText: CancelButton
+    }).then(function (Value) {
+        if (Value.value === true) {
+            CallBack();
+        }
+    });
+
+
+}
+
+function NotifyDBError(Result) {
+    NotifyHardError(Result.Error ? Result.Error : "Системная ошибка, пожалуйста, обратитесь к разработчику.");
+}
+
+
+
+
+function SubmitToURL(Form, URL, Parameters, OnLoadFunction, ObjectForSpinner) {
+    var oData = new FormData(Form[0]);
+
+    if (ObjectForSpinner) {
+        LoadingSpinner(ObjectForSpinner);
+    }
+
+
+    // Enumerate parameters
+    var ParametersString = "";
+    if (typeof (Parameters) === "object") {
+        for (var Key in Parameters) {
+            if (!ParametersString) {
+                ParametersString += "?"
+            } else {
+                ParametersString += "&"
+            }
+            ParametersString += Key + "=" + encodeURIComponent(Parameters[Key]);
+        }
+    }
+
+    var XHR = new XMLHttpRequest();
+
+
+    XHR.open("POST", URL + ParametersString, true);
+
+    XHR.send(oData);
+    XHR.addEventListener("load", function () {
+        try {
+            var data = JSON.parse(XHR.responseText);
+        } catch (e) {
+            console.log("Exception while parsing");
+            console.log(XHR.responseText);
+            console.log(e);
+        }
+        OnLoadFunction(data);
+        if (ObjectForSpinner) {
+            HideLoadingSpinner(ObjectForSpinner);
+        }
+    });
+
+
+    return XHR;
+}
+
+
+function Submit(Form, Scheme, Function, OnLoadFunction, ObjectForSpinner) {
+    var oData = new FormData(Form[0]);
+
+    if (ObjectForSpinner) {
+        LoadingSpinner(ObjectForSpinner);
+    }
+
+
+    var XHR = new XMLHttpRequest();
+
+    XHR.open("POST", "/a.php?S=" + Scheme + "&F=" + Function, true);
+
+    XHR.send(oData);
+    XHR.addEventListener("load", function () {
+        try {
+            var data = JSON.parse(XHR.responseText);
+        } catch (e) {
+            console.log("Exception while parsing");
+            console.log(XHR.responseText);
+            console.log(e);
+        }
+
+
+        if (data.Result === "Failed") {
+            NotifyDBError(data);
+        } else {
+            OnLoadFunction(data);
+        }
+
+
+        if (ObjectForSpinner) {
+            HideLoadingSpinner(ObjectForSpinner);
+        }
+    });
+
+
+    return XHR;
+}
+
+function SubmitOLD(Form, Scheme, Function, Parameters, OnLoadFunction, ObjectForSpinner) {
+    Parameters.S = Scheme;
+    Parameters.F = Function;
+    SubmitToURL(Form, "/app.php", Parameters, OnLoadFunction, ObjectForSpinner);
+}
+
+function RemoveAllChild(Parent) {
+    while (Parent.firstChild) {
+        Parent.removeChild(Parent.firstChild);
+    }
+}
+
+function LoadingSpinner(Object) {
+    Object.waitMe({
+        effect: 'rotateplane',
+        text: '',
+        bg: 'rgba(255,255,255,0.7)',
+        color: '#444',
+        onClose: function () {}
+    });
+}
+
+function LoadingSpinnerSmall(Object) {
+    Object.waitMe({
+        effect: 'facebook',
+        text: '',
+        bg: 'rgba(255,255,255,0.7)',
+        color: '#444',
+        maxSize: 20,
+        onClose: function () {}
+    });
+}
+
+function LoadingSpinnerError(Object, Text = 'Ошибка связи с сервером') {
+    Object.waitMe({
+        effect: 'none',
+        text: Text,
+        bg: 'rgba(255,255,255,0.8)',
+        color: '#444',
+        onClose: function () {}
+    });
+}
+
+
+function HideLoadingSpinner(Object) {
+
+    Object.waitMe('hide');
+
+}
+
+
+
+function Select2InModalWorkaround(Select, Modal) {
+    Select.select2({
+        dropdownParent: Modal
+    });
+}
+
+
+// Iteh has tag
+function ItemHasTag(ItemInfo, Tag) {
+    for (var i = 0; i < ItemInfo.Tags.length; i++) {
+        if (ItemInfo.Tags[i].Title === Tag) {
+            return true;
+        }
+    }
+}
+
+function GetTagOfGroup(Tags, Group) {
+    for (var i = 0; i < Tags.length; i++) {
+        if (Tags[i].Group.Title === Group) {
+            return Tags[i];
+        }
+    }
+
+}
+
+function PhoneNumberFormat(Number, OnlyNumbers) {
+    var NewNumber = Number.replace(/[ ()+-]+/g, "");
+    if (/^[0-9]+$/.test(NewNumber)) {
+        if (NewNumber.length === 11) {
+            if ((NewNumber[0] === "8") || (NewNumber[0] === "7")) {
+                if (OnlyNumbers) {
+                    return NewNumber.replace(/[87]([0-9]{3})([0-9]{3})([0-9]{2})([0-9]{2})/, "7$1$2$3$4");
+                } else {
+                    return NewNumber.replace(/[87]([0-9]{3})([0-9]{3})([0-9]{2})([0-9]{2})/, "+7 ($1) $2-$3-$4");
+                }
+            }
+        }
+    }
+
+    return Number;
+}
+
+function EnumerateItems(Items) {
+    if (Object.prototype.toString.call(Items) == "[object Array]") {
+        // If ony one element is given, return it.
+        if (Items.length == 1) {
+            return Items[0];
+        }
+
+        // If there are more then one element, enumerate them.
+        var Collector = "";
+        if (Items.length > 1) {
+            for (var i = 0; i < Items.length; i++) {
+                Collector += Items[i];
+                if (i < Items.length - 2) {
+                    Collector += ", ";
+                } else if (i < (Items.length - 1)) {
+                    Collector += " и ";
+                }
+            }
+
+            return Collector;
+        }
+    } else {
+        // Items is not array
+        if (typeof (Items) == "string") {
+            return Items;
+        } else {
+            return "";
+        }
+    }
+}
+
+/**
+ * Function associates noun to number: 1 рубль, 2 рубля, 5 рублей
+ */
+function NounToNumber(Count, Word) {
+    var Type;
+
+    Count = Math.abs(Count);
+
+    if ((Count % 100 > 10) && (Count % 100 < 20)) {
+        Type = 3;
+    } else {
+        if (Count % 10 === 0) {
+            Type = 3;
+        }
+        if (Count % 10 === 1) {
+            Type = 1;
+        }
+
+        if ((Count % 10 >= 2) && (Count % 10 <= 4)) {
+            Type = 2;
+        }
+        if ((Count % 10 >= 5) && (Count % 10 <= 9)) {
+            Type = 3;
+        }
+    }
+    return Word.replace(/\[(.+)\|(.+)\|(.+)\]/, "$" + Type);
+}

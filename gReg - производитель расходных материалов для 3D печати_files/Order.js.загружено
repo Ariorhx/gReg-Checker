@@ -1,0 +1,97 @@
+var OrderLib = {
+    Modal: $("#OrderInfoModalLibID"),
+    OpenedOrderID: null
+};
+
+
+// При открытии окна заказа
+OrderLib.Modal.on('show.bs.modal', function (e) {
+    // Окно заказа
+    let M = OrderLib.Modal;
+
+    CallFunction("Orders", "GetInfoForClient", {OrderID: OrderLib.OpenedOrderID}, function (Or) {
+        M.find("[data-order-number]").html(Or.ID);
+
+
+        console.log(Or);
+
+
+        if (Or.DeliveryInfo.DeliveryMethodID == 2) {
+            M.find("[data-transport-entities]").addClass("d-none").removeClass("d-inline");
+        } else {
+            M.find("[data-transport-entities]").addClass("d-inline").removeClass("d-none");
+
+            // Стоимость упаковки
+            M.find("[data-pack-price]").html(FormatNumber(Or.TotalPackPrice));
+
+            // Стоимость доставки
+            M.find("[data-delivery-price]").html(FormatNumber(Or.DeliveryPrice));
+
+            // Стоимость заказа
+            M.find("[data-items-price]").html(FormatNumber(Or.TotalItemsPrice));
+
+        }
+
+        // Стоимость заказа
+        M.find("[data-total-price]").html(FormatNumber(Or.TotalPrice));
+
+
+        // Информация о доставке
+        M.find("[data-delivery-method]").html(Or.DeliveryInfo.MethodName);
+        M.find("[data-delivery-details]").html(Or.DeliveryInfo.DestinationInfoText);
+
+
+        // Таблица позиций
+        let TB = M.find("[data-items-table-body]");
+        TB.empty();
+
+        let N = 1;
+
+        Or.Items.forEach(function (It) {
+            if (!It.Removed) {
+                let TR = $("<tr>").appendTo(TB);
+
+                // Номер
+                TR.append($("<td>").addClass("text-muted").append($("<small>").html(N)));
+
+                // Название
+                TR.append($("<td>").html(It.FullName).addClass("w-100 text-nowrap"));
+
+                // Количество
+                TR.append($("<td>").html(It.Count + ' <small class="text-muted">шт.</small>').addClass("text-right text-nowrap pr-0"));
+
+                // Крестик
+                TR.append($("<td>").html('<small class="text-muted">&#10005;</small>'));
+
+                // Цена одной единицы
+                TR.append($("<td>").html(FormatNumber(It.FinalOneItemPrice) + ' <small class="text-muted">р.</small>').addClass("text-right text-nowrap pl-0 pr-0"));
+
+                // Равно
+                TR.append($("<td>").html('='));
+
+                // Цена всей товарной позиции (всей строчки, учитывая количество)
+                TR.append($("<td>").html('<span class="text-info">' + FormatNumber(It.FinalItemPrice) + '</span> <small class="text-muted">р.</small>').addClass("text-right text-nowrap pl-0"));
+
+
+                // Также нужно чтобы убрать бордер сверху
+                if (N == 1) {
+                    TR.find("td").css({border: 0});
+                }
+
+                N++
+            }
+        });
+
+
+    }, M.find(".modal-content"));
+
+});
+// При открытии окна заказа
+
+
+// Открыть заказ
+OrderLib.Open = function (OrderID) {
+    OrderLib.OpenedOrderID = OrderID;
+
+    OrderLib.Modal.modal();
+};

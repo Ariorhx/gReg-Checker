@@ -1,0 +1,154 @@
+var AddressLib = {};
+
+
+// Edit address
+function OpenEditAddressModal(Address, OnClose) {
+    $('#EditAddressModal').modal();
+
+    AddressLib.OnEditClose = OnClose;
+    AddressLib.EditSaved = false;
+
+    $("#EditAddressModal form").trigger('reset');
+
+
+    // Address ID
+    $('#EditAddressModal input[name=AddressID]').val(Address.ID);
+
+    // Surname
+    $('#EditAddressModal input[name=Surname]').val(Address.Surname);
+
+    // Name
+    $('#EditAddressModal input[name=Name]').val(Address.Name);
+
+    // Middlename
+    $('#EditAddressModal input[name=Middlename]').val(Address.Middlename);
+
+    // Phone
+    $('#EditAddressModal input[name=Phone]').val(Address.Phone);
+
+    // Address
+    $('#EditAddressModal input[name=Address]').val(Address.Address);
+
+    $('#EditAddressModal input[name=Address]').data("PreviousAddress", Address.Address);
+
+
+    // DaData
+    $('#EditAddressModal input[name=DaData]').val(JSON.stringify(Address.DaData));
+
+
+    // Activate dadata suggestions
+    $('#EditAddressModal input[name=Address]').TypeaheadDaData({
+        onSelect: function (Data) {
+            $('#EditAddressModal input[name="DaData"]').val(JSON.stringify(Data.value));
+            $('#EditAddressModal input[name=Address]').data("PreviousAddress", $('#EditAddressModal input[name=Address]').val());
+        }
+    });
+
+
+}
+
+
+
+// SubmitOLD edit form
+$("#EditAddressModal form").submit(function () {
+    if (FormValidate($('#EditAddressModal form'), function (Form) {
+        return CheckInputValue($('#EditAddressModal input[name=Address]'), function (Value) {
+            if ($('#EditAddressModal input[name=Address]').data("PreviousAddress") !== Value) {
+                return "Пожалуйста, выберите адрес из выпадающего списка";
+            }
+        });
+    })) {
+        Submit($(this), "Addresses", "EditMyAddress", function () {
+            AddressLib.EditSaved = true;
+            $("#EditAddressModal").modal("hide");
+        }, $("#EditAddressModal div.modal-content"));
+    }
+
+    return false;
+});
+
+// Edit modal is hidden
+$('#EditAddressModal').on('hidden.bs.modal', function (e) {
+    if (typeof (AddressLib.OnEditClose) === "function") {
+        AddressLib.OnEditClose(AddressLib.EditSaved);
+    }
+});
+
+
+
+
+
+
+// Add address
+function OpenAddAddressModal(ClientID, OnClose) {
+    $('#AddAddressModal').modal();
+
+    AddressLib.OnClose = OnClose;
+    AddressLib.AddedAddressID = null;
+
+    $("#AddAddressModal form").trigger('reset');
+
+
+    $('#AddAddressModal button[type="submit"]').attr('disabled', 'disabled');
+
+    // Load client info
+    CallFunction("Clients", "GetInfo_V3", {"ClientID": ClientID}, function (ClientInfo) {
+        $('#AddAddressModal span[data-user-info]').html(ClientInfo.Surname + " " + ClientInfo.Name + " " + ClientInfo.Middlename);
+
+        $('#AddAddressModal input[name=ClientID]').val(ClientInfo.ID);
+
+        // Set user surname as default
+        $('#AddAddressModal input[name=Surname]').val(ClientInfo.Surname);
+
+        // Set user name as default
+        $('#AddAddressModal input[name=Name]').val(ClientInfo.Name);
+
+        // Set user middle as default
+        $('#AddAddressModal input[name=Middlename]').val(ClientInfo.Middlename);
+
+        // Set user phone as default
+        $('#AddAddressModal input[name=Phone]').val(ClientInfo.Phone);
+
+
+        // Activate dadata suggestions
+        $('#AddAddressModal input[name=Address]').TypeaheadDaData({
+            onSelect: function (Data) {
+                $('#AddAddressModal button[type="submit"]').removeAttr('disabled');
+
+                $('#AddAddressModal input[name="DaData"]').val(JSON.stringify(Data.value));
+            }
+        });
+
+
+
+    }, $("#EditClientModal div.modal-content"));
+}
+
+
+$('#AddAddressModal').on('hidden.bs.modal', function (e) {
+    if (typeof (AddressLib.OnClose) === "function") {
+        AddressLib.OnClose(AddressLib.AddedAddressID);
+    }
+});
+
+
+$('#AddAddressModal').on('shown.bs.modal', function (e) {
+    $('#AddAddressModal input[name="Address"]').focus();
+});
+
+// Disable submit button when input value is changed
+$('#AddAddressModal input[type="text"]').on("change", function () {
+    $('#AddAddressModal button[type="submit"]').attr('disabled', 'disabled');
+});
+
+// SubmitOLD add form
+$("#AddAddressModal form").submit(function () {
+
+    SubmitOLD($(this), "Addresses", "Add", function (Result) {
+        AddressLib.AddedAddressID = Result.ID;
+        $("#AddAddressModal").modal("hide");
+    }, $("#AddClientModal div.modal-content"));
+
+    return false;
+});
+

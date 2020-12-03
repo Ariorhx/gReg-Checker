@@ -1,48 +1,27 @@
-package Test.GregFastCheck;
+package Test.GregFastCheck.Interfaces;
 
 public abstract class Filament {
 	private String color;
 	private String material;
 	private int length;
-	private int number;
+	private int available_in_store;
 	private int id = -1;
 	
 	public String getColor() {
 		return color;
 	}
-
-	public void setColor(String color) {
-		this.color = color;
-	}
-
 	public String getMaterial() {
 		return material;
 	}
-
-	public void setMaterial(String material) {
-		this.material = material;
-	}
-
 	public int getLength() {
 		return length;
 	}
-
-	public void setLength(int length) {
-		this.length = length;
+	public int getAvailable_in_store() {
+		return available_in_store;
 	}
-
-	public int getNumber() {
-		return number;
-	}
-
-	public void setNumber(int number) {
-		this.number = number;
-	}
-
 	public int getId() {
 		return id;
 	}
-
 	public void setId(int id) {
 		this.id = id;
 	}
@@ -51,14 +30,14 @@ public abstract class Filament {
 		this.color = color;
 		this.material = material;
 		this.length = length;
-		this.number = number;
+		this.available_in_store = number;
 	}
 	
 	public Filament(String color, String material, int length, int number, int id) {
 		this.color = color;
 		this.material = material;
 		this.length = length;
-		this.number = number;
+		this.available_in_store = number;
 		this.id = id;
 	}
 	
@@ -68,7 +47,7 @@ public abstract class Filament {
 		sb.append("color = ").append("\"").append(this.getColor()).append("\", ");
 		sb.append("material = ").append("\"").append(this.getMaterial()).append("\", ");
 		sb.append("length = ").append(this.getLength()).append(", ");
-		sb.append("number = ").append(this.getNumber());
+		sb.append("number = ").append(this.getAvailable_in_store());
 		return sb.toString();
 	}
 	
@@ -79,7 +58,7 @@ public abstract class Filament {
 		sb.append("\"").append(this.getColor()).append("\", ");
 		sb.append("\"").append(this.getMaterial()).append("\", ");
 		sb.append(this.getLength()).append(", ");
-		sb.append(this.getNumber());
+		sb.append(this.getAvailable_in_store());
 		return sb.toString();
 	}
 	

@@ -1,0 +1,4 @@
+CREATE DATABASE test;
+CREATE USER 'Greg'@'localhost' IDENTIFIED BY 'GregPass';
+GRANT SELECT, INSERT, UPDATE, DELETE ON test.gregfilament TO 'Greg'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON test.updatetime TO 'Greg'@'localhost';
